@@ -27,6 +27,10 @@ import kotlinx.coroutines.delay
 
 private lateinit var binding: ActivityMainBinding
 
+data class Anchor(val x: Double, val y: Double)
+
+
+
 class MainActivity : AppCompatActivity() {
     private val uwbManager = EstimoteUWBFactory.create()
     private var job: Job? = null
@@ -37,6 +41,11 @@ class MainActivity : AppCompatActivity() {
     private val beacons = mutableListOf<BluetoothDevice>()
     private val connectedDevices = mutableListOf<String>() // 연결된 비콘의 ID 리스트
     //private var observationHandler:  ProximityObserver.Handler? = null
+    private val beaconsDist : MutableMap<String, Double> = mutableMapOf() // 다시 연결될 비콘의 ID 저장용 리스트
+
+    val AP1 = Anchor(0.0, 0.0)
+    val AP2 = Anchor(2.0, 0.0)
+    val AP3 = Anchor(1.0, 1.5)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -76,10 +85,11 @@ class MainActivity : AppCompatActivity() {
 
                     Log.i("UWB", "Device: $deviceId, Distance: $distance, Azimuth: $azimuth, Elevation: $elevation")
 
+                    beaconsDist[deviceId] = distance.toDouble()
+
                     // 현재 비콘과의 연결을 끊고 다른 비콘과 연결 시도
                     lifecycleScope.launch {
                         disconnectFromBeacon(deviceId)
-                        delay(500) // 약간의 지연 후 다시 연결 시도
                         connectToNextBeacon()
                     }
                 }
@@ -111,6 +121,12 @@ class MainActivity : AppCompatActivity() {
             }
         } else {
             Log.i("UWB", "No more beacons to connect to.")
+            val location = calcUserLocation(beaconsDist["04:42"]!!, beaconsDist["19:3A"]!!, beaconsDist["7C:84"]!!)
+            Log.i("UWB", "x : ${location.first} , y : ${location.second}")
+
+            connectedDevices.clear()
+            connectToNextBeacon()
+
         }
     }
 
@@ -142,5 +158,18 @@ class MainActivity : AppCompatActivity() {
             ),
             1
         )
+    }
+    private fun calcUserLocation(dist1 : Double, dist2 : Double, dist3 : Double): Pair<Double, Double> {
+        val A = 2 * (AP2.x - AP1.x)
+        val B = 2 * (AP2.y - AP1.y)
+        val C = dist1 * dist1 - dist2 * dist2 - AP1.x * AP1.x + AP2.x * AP2.x - AP1.y * AP1.y + AP2.y * AP2.y
+        val D = 2 * (AP3.x - AP2.x)
+        val E = 2 * (AP3.y - AP2.y)
+        val F = dist2 * dist2 - dist3 * dist3 - AP2.x * AP2.x + AP3.x * AP3.x - AP2.y * AP2.y + AP3.y * AP3.y
+
+        val user_x = ((F * B) - (E * C)) / ((B * D) - (E * A))
+        val user_y = ((F * A) - (D * C)) / ((A * E) - (D * B))
+
+        return Pair(user_x, user_y)
     }
 }
