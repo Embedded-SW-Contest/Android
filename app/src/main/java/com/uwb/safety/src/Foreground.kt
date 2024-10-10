@@ -1,4 +1,4 @@
-package com.uwb.safety
+package com.uwb.safety.src
 
 import android.app.*
 import android.content.Intent
@@ -7,13 +7,10 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.uwb.safety.MainActivity
 import com.uwb.safety.R
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.lang.Thread.sleep
-import kotlin.concurrent.thread
 
 class Foreground : Service() {
 

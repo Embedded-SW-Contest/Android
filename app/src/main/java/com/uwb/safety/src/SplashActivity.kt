@@ -1,4 +1,4 @@
-package com.uwb.safety
+package com.uwb.safety.src
 
 import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder
@@ -7,7 +7,6 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.View
 import android.view.animation.AnticipateInterpolator
 import androidx.core.animation.doOnEnd

@@ -1,11 +1,8 @@
-package com.uwb.safety
+package com.uwb.safety.src
 
 import android.os.Bundle
 import android.util.Log
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import com.estimote.uwb.api.EstimoteUWBFactory
 import com.estimote.uwb.api.ranging.EstimoteUWBRangingResult
@@ -16,8 +13,15 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import android.Manifest
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCallback
+import android.bluetooth.BluetoothProfile
+import android.view.View
 import com.estimote.uwb.api.exceptions.ConnectionTimeout
+import com.uwb.safety.config.BaseActivity
 import com.uwb.safety.databinding.ActivityMainBinding
+import com.uwb.safety.util.ConfirmDialogInterface
+import com.uwb.safety.util.CustomDialog
 import kotlinx.coroutines.delay
 
 //import com.estimote.proximity_sdk.api.EstimoteCloudCredentials
@@ -25,14 +29,13 @@ import kotlinx.coroutines.delay
 //import com.estimote.proximity_sdk.api.ProximityObserverBuilder
 //import com.estimote.proximity_sdk.api.ProximityZoneBuilder
 
-private lateinit var binding: ActivityMainBinding
+//private lateinit var binding: ActivityMainBinding
 
 data class Anchor(val x: Double, val y: Double)
 
-
-
-class MainActivity : AppCompatActivity() {
+class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::inflate) , ConfirmDialogInterface {
     private val uwbManager = EstimoteUWBFactory.create()
+    //private var bluetoothGatt: BluetoothGatt? = null
     private var job: Job? = null
     private var distJob: Job? = null
     private var isConnected = false
@@ -49,9 +52,27 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        //binding = ActivityMainBinding.inflate(layoutInflater)
         uwbManager.init(this)
 
+
+        binding.btnStartUwb.setOnClickListener {
+            binding.btnLottie.visibility = View.VISIBLE
+            binding.btnStartUwb.visibility = View.GONE
+            uwbManager.startDeviceScanning(this) // 비콘 스캐닝 시작
+            startUWBScan()
+        }
+        binding.btnLottie.setOnClickListener {
+            binding.btnStartUwb.visibility = View.VISIBLE
+            binding.btnLottie.visibility = View.GONE
+            uwbManager.disconnectDevice()
+            uwbManager.stopDeviceScanning()
+            beacons.clear()
+        }
+
+        setContentView(binding.root)
+    }
+    private fun startUWBScan() {
         // UWB 디바이스 스캔 시작
         uwbManager.uwbDevices.onEach { scanResult: EstimoteUWBScanResult ->
             when (scanResult) {
@@ -90,6 +111,15 @@ class MainActivity : AppCompatActivity() {
                     // 현재 비콘과의 연결을 끊고 다른 비콘과 연결 시도
                     lifecycleScope.launch {
                         disconnectFromBeacon(deviceId)
+//                        val permission = Manifest.permission.BLUETOOTH_CONNECT
+//                        if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
+//                            // 권한이 없는 경우
+//                            ActivityCompat.requestPermissions(this@MainActivity, arrayOf(permission), 1111)
+//                        } else {
+//                            bluetoothGatt?.disconnect()
+//                            bluetoothGatt?.close()
+//                        }
+                        //bluetoothGatt = null // GATT 객체를 해제하여 새로운 연결에 대비
                         connectToNextBeacon()
                     }
                 }
@@ -100,7 +130,12 @@ class MainActivity : AppCompatActivity() {
             }
         }.launchIn(lifecycleScope)
 
+        //uwbManager.startDeviceScanning(this) // 비콘 스캐닝 시작
         uwbManager.startDeviceScanning(this) // 비콘 스캐닝 시작
+        lifecycleScope.launch {
+            delay(5000) // 5초 동안만 스캔
+            uwbManager.stopDeviceScanning()
+        }
     }
 
     private fun connectToNextBeacon() {
@@ -109,6 +144,13 @@ class MainActivity : AppCompatActivity() {
             lifecycleScope.launch {
                 try {
                     uwbManager.connect(nextBeacon, this@MainActivity)
+//                    val permission = Manifest.permission.BLUETOOTH_CONNECT
+//                    if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
+//                        // 권한이 없는 경우
+//                        ActivityCompat.requestPermissions(this@MainActivity, arrayOf(permission), 1111)
+//                    } else {
+//                        bluetoothGatt = nextBeacon.connectGatt(this@MainActivity, false, bluetoothGattCallback)
+//                    }
                     connectedDevices.add(nextBeacon.address)
                     Log.i("UWB", "Connected to beacon: ${nextBeacon.address}")
                 } catch (e: ConnectionTimeout) {
@@ -123,7 +165,13 @@ class MainActivity : AppCompatActivity() {
             Log.i("UWB", "No more beacons to connect to.")
             val location = calcUserLocation(beaconsDist["04:42"]!!, beaconsDist["19:3A"]!!, beaconsDist["7C:84"]!!)
             Log.i("UWB", "x : ${location.first} , y : ${location.second}")
-
+            if(location.first < 0 || location.first > 2.0 || location.second < 0 || location.second > 1.5){
+                val dialog = CustomDialog(this, 1234)
+                // 알림창이 띄워져있는 동안 배경 클릭 막기
+                dialog.isCancelable = false
+                dialog.show(this.supportFragmentManager, "ConfirmDialog")
+                //alarm.ringAlarm()
+            }
             connectedDevices.clear()
             connectToNextBeacon()
 
@@ -149,12 +197,15 @@ class MainActivity : AppCompatActivity() {
         super.onStart()
         requestPermissions(
             arrayOf(
-                Manifest.permission.BLUETOOTH,
-                Manifest.permission.BLUETOOTH_ADMIN,
                 Manifest.permission.BLUETOOTH_SCAN,
                 Manifest.permission.BLUETOOTH_CONNECT,
-                Manifest.permission.UWB_RANGING,
-                Manifest.permission.ACCESS_FINE_LOCATION
+                Manifest.permission.UWB_RANGING
+//                Manifest.permission.BLUETOOTH,
+//                Manifest.permission.BLUETOOTH_ADMIN,
+//                Manifest.permission.BLUETOOTH_SCAN,
+//                Manifest.permission.BLUETOOTH_CONNECT,
+//                Manifest.permission.UWB_RANGING,
+//                Manifest.permission.ACCESS_FINE_LOCATION
             ),
             1
         )
@@ -171,5 +222,19 @@ class MainActivity : AppCompatActivity() {
         val user_y = ((F * A) - (D * C)) / ((A * E) - (D * B))
 
         return Pair(user_x, user_y)
+    }
+
+    private val bluetoothGattCallback = object : BluetoothGattCallback() {
+        override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
+            if (newState == BluetoothProfile.STATE_CONNECTED) {
+                // successfully connected to the GATT Server
+            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                // disconnected from the GATT Server
+            }
+        }
+    }
+
+    override fun onDialogClick(id: Int) {
+        //finish()
     }
 }

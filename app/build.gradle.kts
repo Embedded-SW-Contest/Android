@@ -50,8 +50,19 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
+    implementation (libs.retrofit)
+    implementation (libs.retrofit.converters)
+    implementation (libs.converter.gson)
+
+    implementation(libs.okhttp)
+    implementation(libs.logging.interceptor)
+
     implementation("com.estimote:uwb-sdk:1.0.0-rc5")
     implementation ("androidx.core:core-splashscreen:1.0.0-rc01")
     implementation ("com.airbnb.android:lottie:6.0.0")
     //implementation (libs.proximity.sdk)
+
+    // https://github.com/ybq/Android-SpinKit
+    implementation ("com.github.ybq:Android-SpinKit:1.4.0")
+
 }
