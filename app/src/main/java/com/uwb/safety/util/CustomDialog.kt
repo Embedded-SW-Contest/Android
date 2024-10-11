@@ -7,8 +7,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
-import com.uwb.safety.src.MainActivity
 import com.uwb.safety.databinding.DialogAlarmBinding
+import com.uwb.safety.src.MainActivity
 
 class CustomDialog (confirmDialogInterface: ConfirmDialogInterface, id: Int
 ) : DialogFragment() {
