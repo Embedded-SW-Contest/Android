@@ -1,4 +1,4 @@
-package com.uwb.safety.src
+package com.uwb.safety.util
 
 import android.app.*
 import android.content.Intent
@@ -8,6 +8,7 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.uwb.safety.R
+import com.uwb.safety.src.MainActivity
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch

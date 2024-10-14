@@ -15,11 +15,13 @@ class ApplicationClass : Application() {
     val API_URL = "https://00gym.shop/"
 
     companion object {
-        // 만들어져있는 SharedPreferences 를 사용
         lateinit var sSharedPreferences: SharedPreferences
         lateinit var editor : SharedPreferences.Editor
         val X_ACCESS_TOKEN = "X-ACCESS-TOKEN"
         val USER_IDX = "USER_IDX"
+        val USER_X = "USER_X"
+        val USER_Y = "USER_Y"
+        val USER_DIST = "USER_DIST"
 
         lateinit var sRetrofit: Retrofit
 
@@ -29,6 +31,7 @@ class ApplicationClass : Application() {
         sSharedPreferences =
             applicationContext.getSharedPreferences("USER_TOKEN", MODE_PRIVATE)
         editor = sSharedPreferences.edit()
+        editor.putLong(USER_IDX,15)
         // 레트로핏 인스턴스 생성
         initRetrofitInstance()
     }
