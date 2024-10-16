@@ -1,4 +1,4 @@
-package com.uwb.safety.config
+package com.uwb.safeguard.config
 
 import com.google.gson.annotations.SerializedName
 

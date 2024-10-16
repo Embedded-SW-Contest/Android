@@ -1,4 +1,4 @@
-package com.uwb.safety
+package com.uwb.safeguard
 
 import org.junit.Test
 

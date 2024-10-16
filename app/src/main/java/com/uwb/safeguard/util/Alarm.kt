@@ -1,4 +1,4 @@
-package com.uwb.safety.util
+package com.uwb.safeguard.util
 
 import android.content.Context
 import android.media.RingtoneManager
@@ -6,7 +6,6 @@ import android.net.Uri
 import android.os.VibrationEffect
 import android.os.VibratorManager
 import android.util.Log
-import kotlin.math.log
 
 class Alarm (private val con : Context){
     val dist = 0

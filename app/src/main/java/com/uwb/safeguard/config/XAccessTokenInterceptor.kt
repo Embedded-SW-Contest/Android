@@ -1,7 +1,7 @@
-package com.uwb.safety.config
+package com.uwb.safeguard.config
 
-import com.uwb.safety.config.ApplicationClass.Companion.X_ACCESS_TOKEN
-import com.uwb.safety.config.ApplicationClass.Companion.sSharedPreferences
+import com.uwb.safeguard.config.ApplicationClass.Companion.X_ACCESS_TOKEN
+import com.uwb.safeguard.config.ApplicationClass.Companion.sSharedPreferences
 import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response

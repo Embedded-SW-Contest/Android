@@ -1,4 +1,4 @@
-package com.uwb.safety.util
+package com.uwb.safeguard.util
 
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
@@ -7,8 +7,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
-import com.uwb.safety.databinding.DialogAlarmBinding
-import com.uwb.safety.src.MainActivity
+import com.uwb.safeguard.databinding.DialogAlarmBinding
+import com.uwb.safeguard.src.MainActivity
 
 class CustomDialog (confirmDialogInterface: ConfirmDialogInterface, id: Int
 ) : DialogFragment() {

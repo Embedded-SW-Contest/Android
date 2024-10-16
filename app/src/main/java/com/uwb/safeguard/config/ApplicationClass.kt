@@ -1,15 +1,17 @@
-package com.uwb.safety.config
+package com.uwb.safeguard.config
 
 import android.app.Application
 import android.content.SharedPreferences
+<<<<<<< HEAD:app/src/main/java/com/uwb/safety/config/ApplicationClass.kt
 import com.estimote.uwb.api.EstimoteUWBFactory
 import okhttp3.Interceptor
+=======
+import com.uwb.safeguard.src.model.CarResponse
+>>>>>>> d53f4a330eb9e9e62bf0a9c13352815b238e1975:app/src/main/java/com/uwb/safeguard/config/ApplicationClass.kt
 import okhttp3.OkHttpClient
-import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 class ApplicationClass : Application() {
@@ -23,7 +25,11 @@ class ApplicationClass : Application() {
         val USER_X = "USER_X"
         val USER_Y = "USER_Y"
         val USER_DIST = "USER_DIST"
+<<<<<<< HEAD:app/src/main/java/com/uwb/safety/config/ApplicationClass.kt
         //val uwbManager = EstimoteUWBFactory.create()
+=======
+        lateinit var carInfo : CarResponse
+>>>>>>> d53f4a330eb9e9e62bf0a9c13352815b238e1975:app/src/main/java/com/uwb/safeguard/config/ApplicationClass.kt
 
         lateinit var sRetrofit: Retrofit
 
@@ -34,6 +40,7 @@ class ApplicationClass : Application() {
             applicationContext.getSharedPreferences("USER_TOKEN", MODE_PRIVATE)
         editor = sSharedPreferences.edit()
         editor.putLong(USER_IDX,15)
+        carInfo = CarResponse(0,0.0,0.0,"",0.0)
         // 레트로핏 인스턴스 생성
         initRetrofitInstance()
     }
