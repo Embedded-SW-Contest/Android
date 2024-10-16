@@ -1,5 +1,6 @@
-package com.uwb.safety.src
+package com.uwb.safeguard.src
 
+import SSEClient
 import android.os.Bundle
 import android.util.Log
 import androidx.lifecycle.lifecycleScope
@@ -14,29 +15,23 @@ import android.Manifest
 import android.bluetooth.BluetoothDevice
 import android.view.View
 import com.estimote.uwb.api.exceptions.ConnectionTimeout
-import com.uwb.safety.config.ApplicationClass
-import com.uwb.safety.config.ApplicationClass.Companion.USER_DIST
-import com.uwb.safety.config.ApplicationClass.Companion.USER_X
-import com.uwb.safety.config.ApplicationClass.Companion.USER_Y
-import com.uwb.safety.config.ApplicationClass.Companion.editor
-import com.uwb.safety.config.ApplicationClass.Companion.sSharedPreferences
-import com.uwb.safety.config.BaseActivity
-import com.uwb.safety.databinding.ActivityMainBinding
-import com.uwb.safety.src.model.CarRes
-import com.uwb.safety.src.model.CarResponse
-import com.uwb.safety.src.model.UserRes
-import com.uwb.safety.util.ConfirmDialogInterface
-import com.uwb.safety.util.CustomDialog
+import com.uwb.safeguard.config.ApplicationClass.Companion.USER_DIST
+import com.uwb.safeguard.config.ApplicationClass.Companion.USER_X
+import com.uwb.safeguard.config.ApplicationClass.Companion.USER_Y
+import com.uwb.safeguard.config.ApplicationClass.Companion.carInfo
+import com.uwb.safeguard.config.ApplicationClass.Companion.editor
+import com.uwb.safeguard.config.ApplicationClass.Companion.sSharedPreferences
+import com.uwb.safeguard.config.BaseActivity
+import com.uwb.safeguard.databinding.ActivityMainBinding
+import com.uwb.safeguard.src.model.CarResponse
+import com.uwb.safeguard.src.model.UserRes
+import com.uwb.safeguard.util.ConfirmDialogInterface
+import com.uwb.safeguard.util.CustomDialog
 import kotlinx.coroutines.delay
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.sqrt
 import kotlin.math.pow
-
-//import com.estimote.proximity_sdk.api.EstimoteCloudCredentials
-//import com.estimote.proximity_sdk.api.ProximityObserver
-//import com.estimote.proximity_sdk.api.ProximityObserverBuilder
-//import com.estimote.proximity_sdk.api.ProximityZoneBuilder
 
 //private lateinit var binding: ActivityMainBinding
 
@@ -56,7 +51,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     val AP2 = Anchor(1.5, 0.0)
     val AP3 = Anchor(0.75, 2.0)
 
-    private lateinit var carInfo : CarResponse
     private var carInfoFlag = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -114,8 +108,12 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
 
                     beaconsDist[deviceId] = distance.toDouble()
                     if(!carInfoFlag){
-                        MainService(this).tryGetCar() // 제동거리 확인을 위한 api 호출 -> 비동기 작업이라 먼저 호출 필요
-                        carInfoFlag = true
+                        // SSE 클라이언트 초기화 및 시작
+                        val sseClient = SSEClient("https://00gym.shop/api/cars")
+                        sseClient.startListening()
+//                        MainService(this).tryGetCar() // 제동거리 확인을 위한 api 호출 -> 비동기 작업이라 먼저 호출 필요
+//                        Log.i("UWB", "내가 get요청이요")
+//                        carInfoFlag = true
                     }
                     // 현재 비콘과의 연결을 끊고 다른 비콘과 연결 시도
                     lifecycleScope.launch {
@@ -129,7 +127,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
 //                            bluetoothGatt?.close()
 //                        }
                         //bluetoothGatt = null // GATT 객체를 해제하여 새로운 연결에 대비
-                        delay(300) // 약간의 지연 후 다시 연결 시도 100 -> 500
+                        delay(500) // 약간의 지연 후 다시 연결 시도 100 -> 500
                         connectToNextBeacon()
                     }
                 }
@@ -180,9 +178,23 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
             binding.tvY.text = "Y : " + String.format("%.4f", location.second)
             binding.tvDist.text = "Dist : " + String.format("%.4f", carUserDist)
 
+            // userflag 설정
+            val userflag = if (isPointInRectangle(location.first, location.second)) 0 else 1
+
             //Log.i("DBTest", "x : ${sSharedPreferences.getFloat(USER_X, 0.0F).toString()}")
             // 먼저 제동거리이내에 사람이 있는지 확인 해야함. -> 코드 작성 필요
             // if ~
+            val userRes = UserRes(
+                userId = 1,
+                uniNum = "SafeGuard",
+                userX = location.first,
+                userY = location.second,
+                userDist = carUserDist,
+                userLat = 35.0,
+                userLon = 128.0,
+                userflag = userflag
+            )
+            MainService(this).tryPostUser(userRes)
 
             if(sSharedPreferences.getFloat(USER_DIST, 0.0F) == 0.0F){ // 처음 거리를 측정한 경우 저장만
                 editor.putFloat(USER_X, location.first.toFloat())
@@ -308,6 +320,16 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         val user_y = ((F * A) - (D * C)) / ((A * E) - (D * B))
 
         return Pair(user_x, user_y)
+    }
+
+    // 점이 사각형 내부에 있는지 확인하는 함수
+    private fun isPointInRectangle(px: Double, py: Double): Boolean {
+        val minX = AP1.x
+        val maxX = AP2.x
+        val minY = AP1.y
+        val maxY = AP3.y
+
+        return (px in minX..maxX) && (py in minY..maxY)
     }
 
     fun calCarUserDistance(x1: Double, y1: Double, x2: Double, y2: Double): Double {

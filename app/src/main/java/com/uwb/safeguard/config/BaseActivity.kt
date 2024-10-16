@@ -1,6 +1,5 @@
-package com.uwb.safety.config
+package com.uwb.safeguard.config
 
-import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.widget.Toast

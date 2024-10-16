@@ -1,14 +1,12 @@
-package com.uwb.safety.config
+package com.uwb.safeguard.config
 
 import android.app.Application
 import android.content.SharedPreferences
-import okhttp3.Interceptor
+import com.uwb.safeguard.src.model.CarResponse
 import okhttp3.OkHttpClient
-import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 class ApplicationClass : Application() {
@@ -22,6 +20,7 @@ class ApplicationClass : Application() {
         val USER_X = "USER_X"
         val USER_Y = "USER_Y"
         val USER_DIST = "USER_DIST"
+        lateinit var carInfo : CarResponse
 
         lateinit var sRetrofit: Retrofit
 
@@ -32,6 +31,7 @@ class ApplicationClass : Application() {
             applicationContext.getSharedPreferences("USER_TOKEN", MODE_PRIVATE)
         editor = sSharedPreferences.edit()
         editor.putLong(USER_IDX,15)
+        carInfo = CarResponse(0,0.0,0.0,"",0.0)
         // 레트로핏 인스턴스 생성
         initRetrofitInstance()
     }
