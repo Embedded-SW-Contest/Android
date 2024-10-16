@@ -12,7 +12,13 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import android.Manifest
 import android.bluetooth.BluetoothDevice
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
+import android.os.IBinder
 import android.view.View
+import androidx.core.content.ContextCompat
 import com.estimote.uwb.api.exceptions.ConnectionTimeout
 import com.uwb.safety.config.ApplicationClass
 import com.uwb.safety.config.ApplicationClass.Companion.USER_DIST
@@ -27,6 +33,7 @@ import com.uwb.safety.src.model.CarResponse
 import com.uwb.safety.src.model.UserRes
 import com.uwb.safety.util.ConfirmDialogInterface
 import com.uwb.safety.util.CustomDialog
+import com.uwb.safety.util.Foreground
 import kotlinx.coroutines.delay
 import kotlin.math.PI
 import kotlin.math.abs
@@ -43,7 +50,7 @@ import kotlin.math.pow
 data class Anchor(val x: Double, val y: Double)
 
 class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::inflate) , ConfirmDialogInterface , MainActivityInterface {
-    private val uwbManager = EstimoteUWBFactory.create()
+    val uwbManager = EstimoteUWBFactory.create()
     //private var bluetoothGatt: BluetoothGatt? = null
     private var job: Job? = null
     private var a = 0
@@ -51,10 +58,13 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     private val connectedDevices = mutableListOf<String>() // 연결된 비콘의 ID 리스트
     //private var observationHandler:  ProximityObserver.Handler? = null
     private val beaconsDist : MutableMap<String, Double> = mutableMapOf() // 다시 연결될 비콘의 ID 저장용 리스트
-
+//    private val intent = Intent(this, Foreground::class.java)
     val AP1 = Anchor(0.0, 0.0)
     val AP2 = Anchor(1.5, 0.0)
     val AP3 = Anchor(0.75, 2.0)
+
+//    private var foregroundService: Foreground? = null
+//    private var isBound = false
 
     private lateinit var carInfo : CarResponse
     private var carInfoFlag = false
@@ -65,7 +75,15 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         binding.btnStartUwb.setOnClickListener {
             binding.btnLottie.visibility = View.VISIBLE
             binding.btnStartUwb.visibility = View.GONE
-            uwbManager.startDeviceScanning(this) // 비콘 스캐닝 시작
+//            // Foreground 시작
+//
+//            ContextCompat.startForegroundService(this,intent)
+//
+//            // 서비스 바인딩
+//            bindService(intent, connection, Context.BIND_AUTO_CREATE)
+//
+//            // UWB 스캐닝 시작
+//            foregroundService?.startScanning()
             resetAndRestartUWBScan()
         }
         binding.btnLottie.setOnClickListener {
@@ -73,6 +91,9 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
             binding.btnLottie.visibility = View.GONE
             uwbManager.disconnectDevice()
             uwbManager.stopDeviceScanning()
+//            // Foreground 종료
+//            foregroundService?.stopScanning() // 서비스에서 스캐닝 종료
+//            stopService(intent) // Foreground 서비스 종료
         }
 
         setContentView(binding.root)
@@ -279,23 +300,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         job?.cancel()  // 작업 취소
     }
 
-    override fun onStart() {
-        super.onStart()
-        requestPermissions(
-            arrayOf(
-                Manifest.permission.BLUETOOTH_SCAN,
-                Manifest.permission.BLUETOOTH_CONNECT,
-                Manifest.permission.UWB_RANGING
-//                Manifest.permission.BLUETOOTH,
-//                Manifest.permission.BLUETOOTH_ADMIN,
-//                Manifest.permission.BLUETOOTH_SCAN,
-//                Manifest.permission.BLUETOOTH_CONNECT,
-//                Manifest.permission.UWB_RANGING,
-//                Manifest.permission.ACCESS_FINE_LOCATION
-            ),
-            1
-        )
-    }
+
     private fun calcUserLocation(dist1 : Double, dist2 : Double, dist3 : Double): Pair<Double, Double> {
         val A = 2 * (AP2.x - AP1.x)
         val B = 2 * (AP2.y - AP1.y)
@@ -338,4 +343,43 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         showCustomToast(message)
         Log.i("Embedded_Car_ERROR",message.toString())
     }
+
+//    // 서비스 연결에 필요한 `ServiceConnection` 객체 생성
+//    private val connection = object : ServiceConnection {
+//        override fun onServiceConnected(className: ComponentName, service: IBinder) {
+//            val binder = service as Foreground.LocalBinder // 올바른 타입으로 캐스팅
+//            foregroundService = binder.getService()
+//            isBound = true
+//        }
+//
+//        override fun onServiceDisconnected(arg0: ComponentName) {
+//            foregroundService = null
+//            isBound = false
+//        }
+//    }
+
+//    override fun onStart() {
+//        super.onStart()
+//        requestPermissions(
+//            arrayOf(
+//                Manifest.permission.BLUETOOTH_SCAN,
+//                Manifest.permission.BLUETOOTH_CONNECT,
+//                Manifest.permission.UWB_RANGING
+//            ),
+//            1
+//        )
+//        // 서비스 바인딩
+//        Intent(this, Foreground::class.java).also { intent ->
+//            bindService(intent, connection, Context.BIND_AUTO_CREATE)
+//        }
+//    }
+
+//    override fun onStop() {
+//        super.onStop()
+//        // 서비스 바인딩 해제
+//        if (isBound) {
+//            unbindService(connection)
+//            isBound = false
+//        }
+//    }
 }

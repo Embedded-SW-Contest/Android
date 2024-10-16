@@ -2,6 +2,7 @@ package com.uwb.safety.config
 
 import android.app.Application
 import android.content.SharedPreferences
+import com.estimote.uwb.api.EstimoteUWBFactory
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Response
@@ -22,6 +23,7 @@ class ApplicationClass : Application() {
         val USER_X = "USER_X"
         val USER_Y = "USER_Y"
         val USER_DIST = "USER_DIST"
+        //val uwbManager = EstimoteUWBFactory.create()
 
         lateinit var sRetrofit: Retrofit
 
