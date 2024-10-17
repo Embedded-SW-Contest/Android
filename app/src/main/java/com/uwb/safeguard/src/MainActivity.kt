@@ -28,11 +28,11 @@ import com.uwb.safeguard.config.ApplicationClass.Companion.carInfo
 import com.uwb.safeguard.config.ApplicationClass.Companion.editor
 import com.uwb.safeguard.config.ApplicationClass.Companion.sSharedPreferences
 import com.uwb.safeguard.config.BaseActivity
+import com.uwb.safeguard.databinding.ActivityMainBinding
 import com.uwb.safeguard.src.model.CarResponse
 import com.uwb.safeguard.src.model.UserRes
 import com.uwb.safeguard.util.ConfirmDialogInterface
 import com.uwb.safeguard.util.CustomDialog
-import com.uwb.safety.databinding.ActivityMainBinding
 import kotlinx.coroutines.delay
 import kotlin.math.PI
 import kotlin.math.abs
@@ -93,7 +93,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         setContentView(binding.root)
     }
     private fun startUWBScan() {
-        //uwbManager.startDeviceScanning(this) // 비콘 스캐닝 시작
+        uwbManager.startDeviceScanning(this) // 비콘 스캐닝 시작
         // UWB 디바이스 스캔 시작
         uwbManager.uwbDevices.onEach { scanResult: EstimoteUWBScanResult ->
             when (scanResult) {
@@ -199,8 +199,17 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
             binding.tvY.text = "Y : " + String.format("%.4f", location.second)
             binding.tvDist.text = "Dist : " + String.format("%.4f", carUserDist)
 
+            // 사각형 범위 내에 있는지 확인
+            if (isPointInRectangle(location.first, location.second)) {
+                Log.i("UWB", "User is inside the rectangle. Stopping UWB functions.")
+                uwbManager.disconnectDevice()
+                uwbManager.stopDeviceScanning()
+                resetButtonState()
+                return // 사각형 범위 내에 있으면 더 이상 연결 시도하지 않고 종료
+            }
+
             // userflag 설정
-            val userflag = if (isPointInRectangle(location.first, location.second)) 0 else 1
+            // val userflag = if (isPointInRectangle(location.first, location.second)) 0 else 1
 
             //Log.i("DBTest", "x : ${sSharedPreferences.getFloat(USER_X, 0.0F).toString()}")
             // 먼저 제동거리이내에 사람이 있는지 확인 해야함. -> 코드 작성 필요
@@ -213,7 +222,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                 userDist = carUserDist,
                 userLat = 35.0,
                 userLon = 128.0,
-                userflag = userflag
+                userflag = 1
             )
             MainService(this).tryPostUser(userRes)
 
@@ -283,6 +292,12 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         } catch (e: Exception) {
             Log.e("UWB", "Failed to disconnect from beacon: $deviceId, Error: ${e.message}")
         }
+    }
+
+    private fun resetButtonState() {
+        // 버튼 상태를 원래대로 복원
+        binding.btnLottie.visibility = View.GONE
+        binding.btnStartUwb.visibility = View.VISIBLE
     }
 
     private fun resetAndRestartUWBScan() {
