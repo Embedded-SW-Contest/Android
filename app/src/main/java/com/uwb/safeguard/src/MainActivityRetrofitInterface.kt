@@ -2,7 +2,7 @@ package com.uwb.safeguard.src
 
 import com.uwb.safeguard.src.model.CarResponse
 import com.uwb.safeguard.src.model.UserRes
-import com.uwb.safeguard.src.model.UserResponse
+import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -13,7 +13,7 @@ interface MainActivityRetrofitInterface {
     fun getCar(): Call<List<CarResponse>>
 
     @POST("api/users")
-    fun postUser(@Body userRes: UserRes) : Call<UserResponse>
+    fun postUser(@Body userRes: UserRes) : Call<ResponseBody>
 
 
 

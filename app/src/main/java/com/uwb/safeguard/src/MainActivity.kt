@@ -91,6 +91,11 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         }
 
         setContentView(binding.root)
+
+        // Start GpsService
+        val gpsServiceIntent = Intent(this, GpsService::class.java)
+        startService(gpsServiceIntent)
+        Log.d("MainActivity", "GpsService started") // 서비스 시작 로그
     }
     private fun startUWBScan() {
         uwbManager.startDeviceScanning(this) // 비콘 스캐닝 시작
@@ -220,8 +225,8 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                 userX = location.first,
                 userY = location.second,
                 userDist = carUserDist,
-                userLat = 35.0,
-                userLon = 128.0,
+                userLat = currentLatitude,
+                userLon = currentLongitude,
                 userflag = 1
             )
             MainService(this).tryPostUser(userRes)
@@ -322,11 +327,13 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     override fun onDestroy() {
         super.onDestroy()
         showCustomToast("onDestroy")
+        // Stop GpsService
+        val gpsServiceIntent = Intent(this, GpsService::class.java)
+        stopService(gpsServiceIntent)
         editor.clear()
         editor.apply()
         job?.cancel()  // 작업 취소
     }
-
 
     private fun calcUserLocation(dist1 : Double, dist2 : Double, dist3 : Double): Pair<Double, Double> {
         val A = 2 * (AP2.x - AP1.x)

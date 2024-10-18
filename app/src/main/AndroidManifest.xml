@@ -27,6 +27,9 @@
     <!-- UWB(초광대역) 범위 측정 권한 -->
     <uses-permission android:name="android.permission.UWB_RANGING" />
 
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
 
     <application
         android:name=".config.ApplicationClass"
@@ -54,6 +57,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <service
+            android:name=".src.GpsService"
+            android:enabled="true"
+            android:exported="false" />
     </application>
 
 </manifest>

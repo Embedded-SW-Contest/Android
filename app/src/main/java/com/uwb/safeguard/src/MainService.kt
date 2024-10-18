@@ -3,7 +3,7 @@ package com.uwb.safeguard.src;
 import android.util.Log
 import com.uwb.safeguard.config.ApplicationClass
 import com.uwb.safeguard.src.model.UserRes
-import com.uwb.safeguard.src.model.UserResponse
+import okhttp3.ResponseBody
 
 import retrofit2.Call
 import retrofit2.Callback
@@ -14,8 +14,8 @@ class MainService (private val mainActivityInterface : MainActivityInterface){
     fun tryPostUser(userRes: UserRes){
         val mainActivityRetrofitInterface = ApplicationClass.sRetrofit.create(
             MainActivityRetrofitInterface::class.java)
-        mainActivityRetrofitInterface.postUser(userRes).enqueue(object : Callback<UserResponse> {
-            override fun onResponse(call: Call<UserResponse>, response: Response<UserResponse>) {
+        mainActivityRetrofitInterface.postUser(userRes).enqueue(object : Callback<ResponseBody> {
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                 Log.i("POST 통신", "onResponse 호출됨")
                 if (response.isSuccessful && response.body() != null) {
                     val userResponse = response.body()!!
@@ -26,7 +26,7 @@ class MainService (private val mainActivityInterface : MainActivityInterface){
                 }
             }
 
-            override fun onFailure(call: Call<UserResponse>, t: Throwable) {
+            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
                 Log.e("POST 통신 오류", t.message ?: "통신 오류")
             }
         })
