@@ -30,6 +30,7 @@ import com.uwb.safeguard.config.ApplicationClass.Companion.sSharedPreferences
 import com.uwb.safeguard.config.BaseActivity
 import com.uwb.safeguard.databinding.ActivityMainBinding
 import com.uwb.safeguard.src.model.CarResponse
+import com.uwb.safeguard.src.model.UserDeleteReq
 import com.uwb.safeguard.src.model.UserRes
 import com.uwb.safeguard.util.ConfirmDialogInterface
 import com.uwb.safeguard.util.CustomDialog
@@ -54,8 +55,8 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     private val beaconsDist : MutableMap<String, Double> = mutableMapOf() // 다시 연결될 비콘의 ID 저장용 리스트
 //    private val intent = Intent(this, Foreground::class.java)
     val AP1 = Anchor(0.0, 0.0)
-    val AP2 = Anchor(1.5, 0.0)
-    val AP3 = Anchor(0.75, 2.0)
+    val AP2 = Anchor(1.45, 0.0)
+    val AP3 = Anchor(0.725, 4.2)
 
 //    private var foregroundService: Foreground? = null
 //    private var isBound = false
@@ -69,15 +70,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         binding.btnStartUwb.setOnClickListener {
             binding.btnLottie.visibility = View.VISIBLE
             binding.btnStartUwb.visibility = View.GONE
-//            // Foreground 시작
-//
-//            ContextCompat.startForegroundService(this,intent)
-//
-//            // 서비스 바인딩
-//            bindService(intent, connection, Context.BIND_AUTO_CREATE)
-//
-//            // UWB 스캐닝 시작
-//            foregroundService?.startScanning()
             resetAndRestartUWBScan()
         }
         binding.btnLottie.setOnClickListener {
@@ -85,12 +77,17 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
             binding.btnLottie.visibility = View.GONE
             uwbManager.disconnectDevice()
             uwbManager.stopDeviceScanning()
-//            // Foreground 종료
-//            foregroundService?.stopScanning() // 서비스에서 스캐닝 종료
-//            stopService(intent) // Foreground 서비스 종료
         }
 
         setContentView(binding.root)
+
+        requestPermissions(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ),
+            1
+        )
 
         // Start GpsService
         val gpsServiceIntent = Intent(this, GpsService::class.java)
@@ -118,7 +115,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                     Log.i("UWB", "Error: scan not started")
                 }
             }
-
         }.launchIn(lifecycleScope)
 
         uwbManager.rangingResult.onEach { rangingResult ->
@@ -133,27 +129,18 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                     Log.i("UWB", "Device: $deviceId, Distance: $distance, Azimuth: $azimuth, Elevation: $elevation")
 
                     beaconsDist[deviceId] = distance.toDouble()
+                    // map에 입력값 들어오면 connectedDevices에서 해당 deviceId 제거.
+                    // 제거 안된 값은 무한루프로 돌면서 찾기.
+                    // 아래에 있는 기존 connectedDevices제거 코드는 삭제해야함.
                     if(!carInfoFlag){
                         // SSE 클라이언트 초기화 및 시작
                         val sseClient = SSEClient("https://00gym.shop/api/cars")
                         sseClient.startListening()
-//                        MainService(this).tryGetCar() // 제동거리 확인을 위한 api 호출 -> 비동기 작업이라 먼저 호출 필요
-//                        Log.i("UWB", "내가 get요청이요")
-//                        carInfoFlag = true
                     }
                     // 현재 비콘과의 연결을 끊고 다른 비콘과 연결 시도
                     lifecycleScope.launch {
                         disconnectFromBeacon(deviceId)
-//                        val permission = Manifest.permission.BLUETOOTH_CONNECT
-//                        if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
-//                            // 권한이 없는 경우
-//                            ActivityCompat.requestPermissions(this@MainActivity, arrayOf(permission), 1111)
-//                        } else {
-//                            bluetoothGatt?.disconnect()
-//                            bluetoothGatt?.close()
-//                        }
-                        //bluetoothGatt = null // GATT 객체를 해제하여 새로운 연결에 대비
-                        delay(500) // 약간의 지연 후 다시 연결 시도 100 -> 500
+                        delay(1000) // 약간의 지연 후 다시 연결 시도 100 -> 500
                         connectToNextBeacon()
                     }
                 }
@@ -177,14 +164,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
             lifecycleScope.launch {
                 try {
                     uwbManager.connect(nextBeacon, this@MainActivity)
-
-//                    val permission = Manifest.permission.BLUETOOTH_CONNECT
-//                    if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
-//                        // 권한이 없는 경우
-//                        ActivityCompat.requestPermissions(this@MainActivity, arrayOf(permission), 1111)
-//                    } else {
-//                        bluetoothGatt = nextBeacon.connectGatt(this@MainActivity, false, bluetoothGattCallback)
-//                    }
                     connectedDevices.add(nextBeacon.address)
                     Log.i("UWB", "Connected to beacon: ${nextBeacon.address}")
                 } catch (e: ConnectionTimeout) {
@@ -213,14 +192,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                 return // 사각형 범위 내에 있으면 더 이상 연결 시도하지 않고 종료
             }
 
-            // userflag 설정
-            // val userflag = if (isPointInRectangle(location.first, location.second)) 0 else 1
-
-            //Log.i("DBTest", "x : ${sSharedPreferences.getFloat(USER_X, 0.0F).toString()}")
-            // 먼저 제동거리이내에 사람이 있는지 확인 해야함. -> 코드 작성 필요
-            // if ~
             val userRes = UserRes(
-                userId = 1,
                 uniNum = "SafeGuard",
                 userX = location.first,
                 userY = location.second,
@@ -269,22 +241,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
             editor.apply()
             connectedDevices.clear()
             connectToNextBeacon()
-//            if(location.first < 0 || location.first > 1.5 || location.second < 0 || location.second > 2.0){
-////                val dialog = CustomDialog(this, 1234)
-////                // 알림창이 띄워져있는 동안 배경 클릭 막기
-////                dialog.isCancelable = false
-////                dialog.show(this.supportFragmentManager, "ConfirmDialog")
-////                //alarm.ringAlarm()
-////                connectedDevices.clear()
-////                connectToNextBeacon()
-//                //showCustomToast("instead.... running")
-//            }else if(location.first > 0 || location.first < 1.5 || location.second > 0 || location.second < 2.0){
-//                uwbManager.disconnectDevice() // 차량 내부에 있다고 판단
-//                uwbManager.stopDeviceScanning() // UWB 기능 종료
-//            }else{
-//                connectedDevices.clear()
-//                connectToNextBeacon()
-//            }
 
         }
     }
@@ -303,6 +259,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         // 버튼 상태를 원래대로 복원
         binding.btnLottie.visibility = View.GONE
         binding.btnStartUwb.visibility = View.VISIBLE
+        MainService(this).tryDeleteUser("SafeGuard")
     }
 
     private fun resetAndRestartUWBScan() {
@@ -322,6 +279,10 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
             delay(1000) // Optional delay to ensure proper reset
             startUWBScan() // Restart the UWB scan
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
     }
 
     override fun onDestroy() {
@@ -364,16 +325,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         return distance
     }
 
-//    private val bluetoothGattCallback = object : BluetoothGattCallback() {
-//        override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
-//            if (newState == BluetoothProfile.STATE_CONNECTED) {
-//                // successfully connected to the GATT Server
-//            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-//                // disconnected from the GATT Server
-//            }
-//        }
-//    }
-
     override fun onDialogClick(id: Int) {
         //finish()
     }
@@ -388,42 +339,12 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         Log.i("Embedded_Car_ERROR",message.toString())
     }
 
-//    // 서비스 연결에 필요한 `ServiceConnection` 객체 생성
-//    private val connection = object : ServiceConnection {
-//        override fun onServiceConnected(className: ComponentName, service: IBinder) {
-//            val binder = service as Foreground.LocalBinder // 올바른 타입으로 캐스팅
-//            foregroundService = binder.getService()
-//            isBound = true
-//        }
-//
-//        override fun onServiceDisconnected(arg0: ComponentName) {
-//            foregroundService = null
-//            isBound = false
-//        }
-//    }
+    override fun onDeleteUserSuccess(response: String) {
+        Log.i("Embedded_Car",response.toString())
+    }
 
-//    override fun onStart() {
-//        super.onStart()
-//        requestPermissions(
-//            arrayOf(
-//                Manifest.permission.BLUETOOTH_SCAN,
-//                Manifest.permission.BLUETOOTH_CONNECT,
-//                Manifest.permission.UWB_RANGING
-//            ),
-//            1
-//        )
-//        // 서비스 바인딩
-//        Intent(this, Foreground::class.java).also { intent ->
-//            bindService(intent, connection, Context.BIND_AUTO_CREATE)
-//        }
-//    }
-
-//    override fun onStop() {
-//        super.onStop()
-//        // 서비스 바인딩 해제
-//        if (isBound) {
-//            unbindService(connection)
-//            isBound = false
-//        }
-//    }
+    override fun onDeleteUserFailure(message: String) {
+        showCustomToast(message)
+        Log.i("Embedded_Car_ERROR",message.toString())
+    }
 }

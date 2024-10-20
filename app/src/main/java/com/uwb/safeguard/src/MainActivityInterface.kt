@@ -6,4 +6,8 @@ interface MainActivityInterface {
     fun onGetCarSuccess(response: List<CarResponse>)
 
     fun onGetCarFailure(message: String)
+
+    fun onDeleteUserSuccess(response: String)
+
+    fun onDeleteUserFailure(message: String)
 }
