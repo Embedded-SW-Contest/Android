@@ -35,6 +35,7 @@ import com.uwb.safeguard.src.model.UserRes
 import com.uwb.safeguard.util.ConfirmDialogInterface
 import com.uwb.safeguard.util.CustomDialog
 import kotlinx.coroutines.delay
+import java.lang.Thread.sleep
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.sqrt
@@ -43,6 +44,7 @@ import kotlin.math.pow
 //private lateinit var binding: ActivityMainBinding
 
 data class Anchor(val x: Double, val y: Double)
+data class Beacon(val id : String, var dist : Double, val x: Double, val y: Double)
 
 class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::inflate) , ConfirmDialogInterface , MainActivityInterface {
     val uwbManager = EstimoteUWBFactory.create()
@@ -54,9 +56,17 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     //private var observationHandler:  ProximityObserver.Handler? = null
     private val beaconsDist : MutableMap<String, Double> = mutableMapOf() // 다시 연결될 비콘의 ID 저장용 리스트
 //    private val intent = Intent(this, Foreground::class.java)
-    val AP1 = Anchor(0.0, 0.0)
-    val AP2 = Anchor(1.45, 0.0)
-    val AP3 = Anchor(0.725, 4.2)
+    private val beaconList = arrayListOf<Beacon>(
+                     Beacon("03:03",987654321.0,1.19,1.35) // 내부 노란색
+                    ,Beacon("20:36",987654321.0,0.14,1.35) // 내부 흰색
+                    ,Beacon("98:C3",987654321.0,0.665,3.05) // 내부 갈색
+                    ,Beacon("04:42",987654321.0,0.0,0.0) // 외부 흰색
+                    ,Beacon("19:3A",987654321.0,0.87,0.0) // 외부 노란색
+                    ,Beacon("7C:84",987654321.0,0.435,1.85)) // 외부 갈색
+    private val distValues = arrayListOf<Beacon>()
+//    val distValues[0] = Anchor(0.0, 0.0) -> AP1,2,3
+//    val distValues[1] = Anchor(1.45, 0.0)
+//    val distValues[2] = Anchor(0.725, 4.2)
 
 //    private var foregroundService: Foreground? = null
 //    private var isBound = false
@@ -129,6 +139,20 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                     Log.i("UWB", "Device: $deviceId, Distance: $distance, Azimuth: $azimuth, Elevation: $elevation")
 
                     beaconsDist[deviceId] = distance.toDouble()
+                    var b_flag = false
+                    for(i in 0 until 6){
+                        for(j in 0 until 3){
+                            if(beaconList[i].id == deviceId){
+                                beaconList[i].dist = distance.toDouble()
+                                b_flag = true
+                                Log.i("UWB_INPUT", "Device: ${beacons[j].address}, Distance: ${beaconList[i].dist}")
+                                break;
+                            }
+                        }
+                        if(b_flag) {
+                            break
+                        }
+                    }
                     // map에 입력값 들어오면 connectedDevices에서 해당 deviceId 제거.
                     // 제거 안된 값은 무한루프로 돌면서 찾기.
                     // 아래에 있는 기존 connectedDevices제거 코드는 삭제해야함.
@@ -140,7 +164,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                     // 현재 비콘과의 연결을 끊고 다른 비콘과 연결 시도
                     lifecycleScope.launch {
                         disconnectFromBeacon(deviceId)
-                        delay(1000) // 약간의 지연 후 다시 연결 시도 100 -> 500
+                        delay(500) // 약간의 지연 후 다시 연결 시도 100 -> 500
                         connectToNextBeacon()
                     }
                 }
@@ -176,12 +200,28 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
             }
         } else {
             Log.i("UWB", "No more beacons to connect to.")
-            val location = calcUserLocation(beaconsDist["04:42"]!!, beaconsDist["19:3A"]!!, beaconsDist["7C:84"]!!)
-            val carUserDist = calCarUserDistance((AP1.x + AP2.x)/2, 0.0, location.first, location.second)
+//            for(i in beaconsDist.values){ // map 돌면서 map에 들어온 비콘들 거리값 받아옴
+//                values.add(i)
+//            }
+//            val keys = arrayListOf<String>()
+//            for(i in beaconsDist.keys){ // map 돌면서 map에 들어온 비콘들 거리값 받아옴
+//                keys.add(i)
+//            }
+            for(i in beaconList){
+                //Log.i("BeaconList", "반복문")
+                if(i.dist != 987654321.0){
+                    Log.i("BeaconList", "추가됨")
+                    distValues.add(i)
+                }
+            }
+
+            //val location = calcUserLocation(beaconsDist["04:42"]!!, beaconsDist["19:3A"]!!, beaconsDist["7C:84"]!!)
+            val location = calcUserLocation(distValues[0].dist,distValues[1].dist,distValues[2].dist)
+            val carUserDist = calCarUserDistance((distValues[0].x + distValues[1].x)/2, 0.0, location.first, location.second)
             Log.i("UWB", "x : ${location.first} , y : ${location.second} , car_user_distance : ${carUserDist}")
-            binding.tvX.text = "X : " + String.format("%.4f", location.first)
-            binding.tvY.text = "Y : " + String.format("%.4f", location.second)
-            binding.tvDist.text = "Dist : " + String.format("%.4f", carUserDist)
+            //binding.tvX.text = "X : " + String.format("%.4f", location.first)
+            //binding.tvY.text = "Y : " + String.format("%.4f", location.second)
+            //binding.tvDist.text = "Dist : " + String.format("%.4f", carUserDist)
 
             // 사각형 범위 내에 있는지 확인
             if (isPointInRectangle(location.first, location.second)) {
@@ -189,6 +229,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                 uwbManager.disconnectDevice()
                 uwbManager.stopDeviceScanning()
                 resetButtonState()
+                sleep(1000)
                 return // 사각형 범위 내에 있으면 더 이상 연결 시도하지 않고 종료
             }
 
@@ -202,7 +243,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                 userflag = 1
             )
             MainService(this).tryPostUser(userRes)
-
+            sleep(1000)
             if(sSharedPreferences.getFloat(USER_DIST, 0.0F) == 0.0F){ // 처음 거리를 측정한 경우 저장만
                 editor.putFloat(USER_X, location.first.toFloat())
                 editor.putFloat(USER_Y, location.first.toFloat())
@@ -210,19 +251,19 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                 editor.apply()
             }else{ // 이전 측정값이 있다면 이전 값과 비교
                 Log.i("UWB_LOGGGG", "이전값 있음")
-                binding.tvLog.text = binding.tvLog.text.toString() + "이전값 있음\n"
+                binding.tvLog.text = "."
                 // 사분면 확인 -> 1, 2사분면에 그대로 있는지 또는 벗어났는지
                 if(abs(location.first) > 0.2* PI && location.second < 0){
                     Log.i("UWB_LOGGGG", "1, 2 사분면의 0.2PI 이내에 있음")
-                    binding.tvLog.text = binding.tvLog.text.toString() + "1, 2 사분면의 0.2PI 이내에 있음\n"
+                    binding.tvLog.text = "."
                     // 거리가 줄었는지 확인
                     if(carUserDist.toFloat() < sSharedPreferences.getFloat(USER_DIST, 0.0F)){ // sSharedPreferences에 저장된 값이 0이 아님은 앞의 if에서 처리함
                         Log.i("UWB_LOGGGG", "거리 줄어듦 확인")
-                        binding.tvLog.text = binding.tvLog.text.toString() + "거리 줄어듦 확인\n"
+                        binding.tvLog.text = "."
                         // 거리가 줄었다면 user_flag = true로 서버에 업로드
                         if(carInfo.braking_distance > carUserDist){
                             Log.i("UWB_LOGGGG", "RINGINGGGGGGGGG")
-                            binding.tvLog.text = binding.tvLog.text.toString() + "RINGINGGGGGGGGG\n"
+                            //binding.tvLog.text = binding.tvLog.text.toString() + "RINGINGGGGGGGGG\n"
                             val dialog = CustomDialog(this, 1234)
                             // 알림창이 띄워져있는 동안 배경 클릭 막기
                             dialog.isCancelable = false
@@ -297,12 +338,12 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     }
 
     private fun calcUserLocation(dist1 : Double, dist2 : Double, dist3 : Double): Pair<Double, Double> {
-        val A = 2 * (AP2.x - AP1.x)
-        val B = 2 * (AP2.y - AP1.y)
-        val C = dist1 * dist1 - dist2 * dist2 - AP1.x * AP1.x + AP2.x * AP2.x - AP1.y * AP1.y + AP2.y * AP2.y
-        val D = 2 * (AP3.x - AP2.x)
-        val E = 2 * (AP3.y - AP2.y)
-        val F = dist2 * dist2 - dist3 * dist3 - AP2.x * AP2.x + AP3.x * AP3.x - AP2.y * AP2.y + AP3.y * AP3.y
+        val A = 2 * (distValues[1].x - distValues[0].x)
+        val B = 2 * (distValues[1].y - distValues[0].y)
+        val C = dist1 * dist1 - dist2 * dist2 - distValues[0].x * distValues[0].x + distValues[1].x * distValues[1].x - distValues[0].y * distValues[0].y + distValues[1].y * distValues[1].y
+        val D = 2 * (distValues[2].x - distValues[1].x)
+        val E = 2 * (distValues[2].y - distValues[1].y)
+        val F = dist2 * dist2 - dist3 * dist3 - distValues[1].x * distValues[1].x + distValues[2].x * distValues[2].x - distValues[1].y * distValues[1].y + distValues[2].y * distValues[2].y
 
         val user_x = ((F * B) - (E * C)) / ((B * D) - (E * A))
         val user_y = ((F * A) - (D * C)) / ((A * E) - (D * B))
@@ -312,12 +353,12 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
 
     // 점이 사각형 내부에 있는지 확인하는 함수
     private fun isPointInRectangle(px: Double, py: Double): Boolean {
-        val minX = AP1.x
-        val maxX = AP2.x
-        val minY = AP1.y
-        val maxY = AP3.y
+        val minX = 0.0
+        val maxX = 195.0
+        val minY = 0.0
+        val maxY = 493.0
 
-        return (px in minX..maxX) && (py in minY..maxY)
+        return (px in (minX..maxX)) && (py in (minY..maxY))
     }
 
     fun calCarUserDistance(x1: Double, y1: Double, x2: Double, y2: Double): Double {
