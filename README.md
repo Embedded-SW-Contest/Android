@@ -3,7 +3,11 @@
 
 # :oncoming_automobile: UWB 기반 골목길 교통사고 안전 서비스앱 SAFEGUARD
 
+<img src="https://img.shields.io/badge/Kotlin-7F52FF?style=flat&logo=Kotlin&logoColor=white"/><img src="https://img.shields.io/badge/Node.js-5FA04E?style=flat&logo=Node.js&logoColor=white"/><img src="https://img.shields.io/badge/Android-34A853?style=flat&logo=Android&logoColor=white"/>
+
+
 ![SafeGuard](https://github.com/user-attachments/assets/6dd1f9f1-8b6e-4452-afeb-67d0a9893d82)
+
 
 ## 프로젝트 소개
 
