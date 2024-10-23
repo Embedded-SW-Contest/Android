@@ -1,4 +1,4 @@
-package com.uwb.safety
+package com.uwb.safeguard.src
 
 import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder
@@ -7,13 +7,12 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.View
 import android.view.animation.AnticipateInterpolator
 import androidx.core.animation.doOnEnd
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import com.uwb.safety.databinding.ActivitySplashBinding
+import com.uwb.safeguard.databinding.ActivitySplashBinding
 
 class SplashActivity : AppCompatActivity() {
 
@@ -27,7 +26,6 @@ class SplashActivity : AppCompatActivity() {
 
         splashScreen = installSplashScreen()
         startSplash()
-        //loadSplashScreen()
     }
 
     // splash의 애니메이션 설정
