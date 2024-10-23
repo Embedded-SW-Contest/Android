@@ -29,17 +29,21 @@ import com.uwb.safeguard.config.ApplicationClass.Companion.editor
 import com.uwb.safeguard.config.ApplicationClass.Companion.sSharedPreferences
 import com.uwb.safeguard.config.BaseActivity
 import com.uwb.safeguard.databinding.ActivityMainBinding
+import com.uwb.safeguard.src.model.CarInfo
 import com.uwb.safeguard.src.model.CarResponse
 import com.uwb.safeguard.src.model.UserDeleteReq
 import com.uwb.safeguard.src.model.UserRes
 import com.uwb.safeguard.util.ConfirmDialogInterface
 import com.uwb.safeguard.util.CustomDialog
 import kotlinx.coroutines.delay
+import okhttp3.ResponseBody
 import java.lang.Thread.sleep
 import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.cos
 import kotlin.math.sqrt
 import kotlin.math.pow
+import kotlin.math.sin
 
 //private lateinit var binding: ActivityMainBinding
 
@@ -70,8 +74,8 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
 
 //    private var foregroundService: Foreground? = null
 //    private var isBound = false
-
-    private lateinit var carInfo : CarResponse
+    private var p_flag = false
+    private var d_flag = false
     private var carInfoFlag = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -103,6 +107,10 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         val gpsServiceIntent = Intent(this, GpsService::class.java)
         startService(gpsServiceIntent)
         Log.d("MainActivity", "GpsService started") // 서비스 시작 로그
+
+        // SSE 클라이언트 초기화 및 시작
+        val sseClient = SSEClient("https://uwb-safeguard.shop/api/cars")
+        sseClient.startListening()
     }
     private fun startUWBScan() {
         uwbManager.startDeviceScanning(this) // 비콘 스캐닝 시작
@@ -156,11 +164,11 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                     // map에 입력값 들어오면 connectedDevices에서 해당 deviceId 제거.
                     // 제거 안된 값은 무한루프로 돌면서 찾기.
                     // 아래에 있는 기존 connectedDevices제거 코드는 삭제해야함.
-                    if(!carInfoFlag){
-                        // SSE 클라이언트 초기화 및 시작
-                        val sseClient = SSEClient("https://00gym.shop/api/cars")
-                        sseClient.startListening()
-                    }
+//                    if(!carInfoFlag){
+//                        // SSE 클라이언트 초기화 및 시작
+//                        val sseClient = SSEClient("https://00gym.shop/api/cars")
+//                        sseClient.startListening()
+//                    }
                     // 현재 비콘과의 연결을 끊고 다른 비콘과 연결 시도
                     lifecycleScope.launch {
                         disconnectFromBeacon(deviceId)
@@ -182,8 +190,10 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         }
     }
 
-    private fun connectToNextBeacon() {
+    private suspend fun connectToNextBeacon() {
         val nextBeacon = beacons.find { !connectedDevices.contains(it.address) }
+        d_flag = false
+        p_flag = false
         if (nextBeacon != null) {
             lifecycleScope.launch {
                 try {
@@ -222,28 +232,26 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
             //binding.tvX.text = "X : " + String.format("%.4f", location.first)
             //binding.tvY.text = "Y : " + String.format("%.4f", location.second)
             //binding.tvDist.text = "Dist : " + String.format("%.4f", carUserDist)
-
+            val newGPS = moveInCustomDirection(currentLatitude, currentLongitude, location.first, location.second, carInfo.heading)
+            Log.i("NEW_GPS", "userX = ${newGPS.first}, userY = ${newGPS.second}")
             // 사각형 범위 내에 있는지 확인
             if (isPointInRectangle(location.first, location.second)) {
                 Log.i("UWB", "User is inside the rectangle. Stopping UWB functions.")
                 uwbManager.disconnectDevice()
                 uwbManager.stopDeviceScanning()
                 resetButtonState()
-                sleep(1000)
                 return // 사각형 범위 내에 있으면 더 이상 연결 시도하지 않고 종료
             }
-
             val userRes = UserRes(
                 uniNum = "SafeGuard",
-                userX = location.first,
-                userY = location.second,
+                userX = newGPS.first,
+                userY = newGPS.second,
                 userDist = carUserDist,
                 userLat = currentLatitude,
                 userLon = currentLongitude,
                 userflag = 1
             )
             MainService(this).tryPostUser(userRes)
-            sleep(1000)
             if(sSharedPreferences.getFloat(USER_DIST, 0.0F) == 0.0F){ // 처음 거리를 측정한 경우 저장만
                 editor.putFloat(USER_X, location.first.toFloat())
                 editor.putFloat(USER_Y, location.first.toFloat())
@@ -281,6 +289,12 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
             editor.putFloat(USER_DIST, carUserDist.toFloat())
             editor.apply()
             connectedDevices.clear()
+            var cnt = 0;
+            while((!p_flag && !d_flag) && cnt < 10){
+                Log.i("DELAY", "정지중 $p_flag , $d_flag")
+                delay(1000)
+                cnt++
+            }
             connectToNextBeacon()
 
         }
@@ -354,9 +368,9 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     // 점이 사각형 내부에 있는지 확인하는 함수
     private fun isPointInRectangle(px: Double, py: Double): Boolean {
         val minX = 0.0
-        val maxX = 195.0
+        val maxX = 1.95
         val minY = 0.0
-        val maxY = 493.0
+        val maxY = 4.93
 
         return (px in (minX..maxX)) && (py in (minY..maxY))
     }
@@ -370,8 +384,26 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         //finish()
     }
 
+    // 사용자 정의 방향을 기준으로 이동할 좌표 계산
+    fun moveInCustomDirection(lat: Double, lon: Double, dx: Double, dy: Double, heading: Double): Pair<Double, Double> {
+        val earthRadius = 6378137.0 // 지구 반경 (미터)
+        // 방위각에 따라 이동 방향 변환
+        val theta = Math.toRadians(heading)
+
+        // 사용자가 정의한 기준에 맞게 x, y 좌표 변환
+        val adjustedDx = dx * cos(theta) - dy * sin(theta)  // x 방향 (왼쪽/오른쪽 이동)
+        val adjustedDy = dx * sin(theta) + dy * cos(theta)  // y 방향 (앞/뒤 이동, y가 -일 때 앞으로 이동)
+
+        // 위도 계산 (y축 이동 반영, 음수 방향은 북쪽으로)
+        val newLat = lat + (adjustedDy / earthRadius) * (180 / Math.PI)
+
+        // 경도 계산 (x축 이동 반영, 위도에 따른 경도 변화 고려)
+        val newLon = lon + (adjustedDx / (earthRadius * cos(Math.toRadians(lat)))) * (180 / Math.PI)
+
+        return Pair(newLat, newLon)
+    }
+
     override fun onGetCarSuccess(response: List<CarResponse>) {
-        carInfo = CarResponse(response[0].car_id, response[0].car_lat, response[0].car_lon, response[0].uni_num, response[0].braking_distance)
         Log.i("Embedded_Car","${response[0].uni_num}, ${response[0].car_lat}, ${response[0].car_lon}, ${response[0].braking_distance}")
     }
 
@@ -380,11 +412,22 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         Log.i("Embedded_Car_ERROR",message.toString())
     }
 
-    override fun onDeleteUserSuccess(response: String) {
+    override fun onDeleteUserSuccess(response: ResponseBody) {
         Log.i("Embedded_Car",response.toString())
+        d_flag = true
     }
 
     override fun onDeleteUserFailure(message: String) {
+        showCustomToast(message)
+        Log.i("Embedded_Car_ERROR",message.toString())
+    }
+
+    override fun onPostUserSuccess(response: ResponseBody) {
+        Log.i("Embedded_Car",response.toString())
+        p_flag = true
+    }
+
+    override fun onPostUserFailure(message: String) {
         showCustomToast(message)
         Log.i("Embedded_Car_ERROR",message.toString())
     }

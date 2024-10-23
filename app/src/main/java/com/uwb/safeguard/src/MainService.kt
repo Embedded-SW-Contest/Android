@@ -17,17 +17,14 @@ class MainService (private val mainActivityInterface : MainActivityInterface){
             MainActivityRetrofitInterface::class.java)
         mainActivityRetrofitInterface.postUser(userRes).enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                mainActivityInterface.onPostUserSuccess(response.body() as ResponseBody)
                 Log.i("POST 통신", "onResponse 호출됨")
-                if (response.isSuccessful && response.body() != null) {
-                    val userResponse = response.body()!!
-                    Log.i("POST 통신 성공", "UserResponse: $userResponse")
-                    // 성공적인 응답을 처리할 필요가 있으면 추가 작업 수행
-                } else {
-                    Log.i("POST 통신 실패", "응답이 성공적이지 않거나 본문이 비어있습니다.")
-                }
+                val userResponse = response.body()!!
+                Log.i("POST 통신 성공", "UserResponse: $userResponse")
             }
 
             override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                mainActivityInterface.onPostUserFailure(t.message ?: "통신 오류")
                 Log.e("POST 통신 오류", t.message ?: "통신 오류")
             }
         })
@@ -37,17 +34,14 @@ class MainService (private val mainActivityInterface : MainActivityInterface){
             MainActivityRetrofitInterface::class.java)
         mainActivityRetrofitInterface.deleteUser(uni_num).enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                mainActivityInterface.onDeleteUserSuccess(response.body() as ResponseBody)
                 Log.i("DELETE 통신", "onResponse 호출됨")
-                if (response.isSuccessful && response.body() != null) {
-                    val userResponse = response.body()!!
-                    Log.i("DELETE 통신 성공", "UserResponse: $userResponse")
-                    // 성공적인 응답을 처리할 필요가 있으면 추가 작업 수행
-                } else {
-                    Log.i("DELETE 통신 실패", "응답이 성공적이지 않거나 본문이 비어있습니다.")
-                }
+                val userResponse = response.body()!!
+                Log.i("DELETE 통신 성공", "UserResponse: $userResponse")
             }
 
             override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                mainActivityInterface.onDeleteUserFailure(t.message ?: "통신 오류")
                 Log.e("Delete 통신 오류", t.message ?: "통신 오류")
             }
         })

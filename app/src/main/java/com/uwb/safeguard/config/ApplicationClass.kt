@@ -3,6 +3,7 @@ package com.uwb.safeguard.config
 import android.app.Application
 import android.content.SharedPreferences
 import com.estimote.uwb.api.EstimoteUWBFactory
+import com.uwb.safeguard.src.model.CarInfo
 import okhttp3.Interceptor
 import com.uwb.safeguard.src.model.CarResponse
 import okhttp3.OkHttpClient
@@ -12,7 +13,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 class ApplicationClass : Application() {
-    val API_URL = "https://00gym.shop/"
+    val API_URL = "https://uwb-safeguard.shop/"
 
     companion object {
         lateinit var sSharedPreferences: SharedPreferences
@@ -22,8 +23,10 @@ class ApplicationClass : Application() {
         val USER_X = "USER_X"
         val USER_Y = "USER_Y"
         val USER_DIST = "USER_DIST"
+        val CAR_LAT = "CAR_LAT"
+        val CAR_LON = "CAR_LON"
         //val uwbManager = EstimoteUWBFactory.create()
-        lateinit var carInfo : CarResponse
+        lateinit var carInfo : CarInfo
 
         lateinit var sRetrofit: Retrofit
 
@@ -34,7 +37,7 @@ class ApplicationClass : Application() {
             applicationContext.getSharedPreferences("USER_TOKEN", MODE_PRIVATE)
         editor = sSharedPreferences.edit()
         editor.putLong(USER_IDX,15)
-        carInfo = CarResponse(0,0.0,0.0,"",0.0)
+        carInfo = CarInfo(0,0.0,0.0,"",0.0, 0.0)
         // 레트로핏 인스턴스 생성
         initRetrofitInstance()
     }
