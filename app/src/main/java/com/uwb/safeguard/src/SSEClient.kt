@@ -1,9 +1,6 @@
 import android.util.Log
 import com.uwb.safeguard.config.ApplicationClass.Companion.CAR_LAT
 import com.uwb.safeguard.config.ApplicationClass.Companion.CAR_LON
-import com.uwb.safeguard.config.ApplicationClass.Companion.USER_DIST
-import com.uwb.safeguard.config.ApplicationClass.Companion.USER_X
-import com.uwb.safeguard.config.ApplicationClass.Companion.USER_Y
 import com.uwb.safeguard.config.ApplicationClass.Companion.carInfo
 import com.uwb.safeguard.config.ApplicationClass.Companion.editor
 import com.uwb.safeguard.config.ApplicationClass.Companion.sSharedPreferences

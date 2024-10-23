@@ -8,7 +8,6 @@ import androidx.viewbinding.ViewBinding
 
 abstract class BaseActivity<B : ViewBinding>(private val inflate : (LayoutInflater) -> B) : AppCompatActivity(){
     protected lateinit var binding : B
-    //private set lateinit var mLoadingDialog: LoadingDialog
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -16,16 +15,6 @@ abstract class BaseActivity<B : ViewBinding>(private val inflate : (LayoutInflat
         setContentView(binding.root)
     }
 
-//    fun showLoadingDialog(context: Context) {
-//        mLoadingDialog = LoadingDialog(context)
-//        mLoadingDialog.show()
-//    }
-//
-//    fun dismissLoadingDialog() {
-//        if (mLoadingDialog.isShowing) {
-//            mLoadingDialog.dismiss()
-//        }
-//    }
 
     fun showCustomToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()

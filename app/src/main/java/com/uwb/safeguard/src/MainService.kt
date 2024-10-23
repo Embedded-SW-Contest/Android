@@ -2,7 +2,6 @@ package com.uwb.safeguard.src;
 
 import android.util.Log
 import com.uwb.safeguard.config.ApplicationClass
-import com.uwb.safeguard.src.model.UserDeleteReq
 import com.uwb.safeguard.src.model.UserRes
 import okhttp3.ResponseBody
 

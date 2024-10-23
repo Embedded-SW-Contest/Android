@@ -34,8 +34,6 @@ class CustomDialog (confirmDialogInterface: ConfirmDialogInterface, id: Int
         _binding = DialogAlarmBinding.inflate(inflater, container, false)
         val view = binding.root
         alarm = Alarm(confirmDialogInterface as MainActivity) // alarm 객체 생성
-        // 레이아웃 배경을 투명하게 해줌, 필수 아님
-        //dialog?.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         alarm.ringAlarm()
         // 취소 버튼 클릭
         binding.alarmDialog.setOnClickListener {

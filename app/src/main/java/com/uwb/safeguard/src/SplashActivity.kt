@@ -26,7 +26,6 @@ class SplashActivity : AppCompatActivity() {
 
         splashScreen = installSplashScreen()
         startSplash()
-        //loadSplashScreen()
     }
 
     // splash의 애니메이션 설정

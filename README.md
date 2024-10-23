@@ -31,12 +31,10 @@
 ### Kotlin
 
 - 코틀린 언어를 사용해 개발하여, 간결하고 안전한 코드 작성을 통해 유지보수성과 개발 생산성을 높임.
-- 
     
 ### Coroutines
 
 - 비동기 작업을 간단하게 처리하기 위해 코루틴을 사용함.
-- 
 
 ### Android-Estimote-UWB-SDK
 
@@ -66,7 +64,6 @@
 │              │      ApplicationClass.kt
 │              │      BaseActivity.kt
 │              │      BaseFragment.kt
-│              │      BaseResponse.kt
 │              │      XAccessTokenInterceptor.kt
 │              │      
 │              ├─src
@@ -79,7 +76,6 @@
 │              │  │  SSEClient.kt
 │              │  │  
 │              │  └─model
-│              │          CarRes.kt
 │              │          CarResponse.kt
 │              │          UserDeleteReq.kt
 │              │          UserRes.kt
@@ -87,7 +83,6 @@
 │              └─util
 │                      Alarm.kt
 │                      CustomDialog.kt
-│                      Foreground.kt
 │                      
 └─res
     ├─drawable

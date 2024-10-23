@@ -1,7 +1,6 @@
 package com.uwb.safeguard.src.model
 
 import com.google.gson.annotations.SerializedName
-import com.uwb.safeguard.config.BaseResponse
 
 data class UserRes (
     @SerializedName("uni_num") val uniNum : String,

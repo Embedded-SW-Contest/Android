@@ -13,13 +13,8 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import android.Manifest
 import android.bluetooth.BluetoothDevice
-import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
-import android.content.ServiceConnection
-import android.os.IBinder
 import android.view.View
-import androidx.core.content.ContextCompat
 import com.estimote.uwb.api.exceptions.ConnectionTimeout
 import com.uwb.safeguard.config.ApplicationClass.Companion.USER_DIST
 import com.uwb.safeguard.config.ApplicationClass.Companion.USER_X
@@ -29,15 +24,12 @@ import com.uwb.safeguard.config.ApplicationClass.Companion.editor
 import com.uwb.safeguard.config.ApplicationClass.Companion.sSharedPreferences
 import com.uwb.safeguard.config.BaseActivity
 import com.uwb.safeguard.databinding.ActivityMainBinding
-import com.uwb.safeguard.src.model.CarInfo
 import com.uwb.safeguard.src.model.CarResponse
-import com.uwb.safeguard.src.model.UserDeleteReq
 import com.uwb.safeguard.src.model.UserRes
 import com.uwb.safeguard.util.ConfirmDialogInterface
 import com.uwb.safeguard.util.CustomDialog
 import kotlinx.coroutines.delay
 import okhttp3.ResponseBody
-import java.lang.Thread.sleep
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
@@ -45,21 +37,15 @@ import kotlin.math.sqrt
 import kotlin.math.pow
 import kotlin.math.sin
 
-//private lateinit var binding: ActivityMainBinding
-
-data class Anchor(val x: Double, val y: Double)
 data class Beacon(val id : String, var dist : Double, val x: Double, val y: Double)
 
 class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::inflate) , ConfirmDialogInterface , MainActivityInterface {
     val uwbManager = EstimoteUWBFactory.create()
-    //private var bluetoothGatt: BluetoothGatt? = null
     private var job: Job? = null
     private var a = 0
     private val beacons = mutableListOf<BluetoothDevice>()
     private val connectedDevices = mutableListOf<String>() // 연결된 비콘의 ID 리스트
-    //private var observationHandler:  ProximityObserver.Handler? = null
     private val beaconsDist : MutableMap<String, Double> = mutableMapOf() // 다시 연결될 비콘의 ID 저장용 리스트
-//    private val intent = Intent(this, Foreground::class.java)
     private val beaconList = arrayListOf<Beacon>(
                      Beacon("03:03",987654321.0,1.19,1.35) // 내부 노란색
                     ,Beacon("20:36",987654321.0,0.14,1.35) // 내부 흰색
@@ -68,15 +54,9 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                     ,Beacon("19:3A",987654321.0,0.87,0.0) // 외부 노란색
                     ,Beacon("7C:84",987654321.0,0.435,1.85)) // 외부 갈색
     private val distValues = arrayListOf<Beacon>()
-//    val distValues[0] = Anchor(0.0, 0.0) -> AP1,2,3
-//    val distValues[1] = Anchor(1.45, 0.0)
-//    val distValues[2] = Anchor(0.725, 4.2)
-
-//    private var foregroundService: Foreground? = null
-//    private var isBound = false
     private var p_flag = false
     private var d_flag = false
-    private var carInfoFlag = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         uwbManager.init(this)
@@ -161,14 +141,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                             break
                         }
                     }
-                    // map에 입력값 들어오면 connectedDevices에서 해당 deviceId 제거.
-                    // 제거 안된 값은 무한루프로 돌면서 찾기.
-                    // 아래에 있는 기존 connectedDevices제거 코드는 삭제해야함.
-//                    if(!carInfoFlag){
-//                        // SSE 클라이언트 초기화 및 시작
-//                        val sseClient = SSEClient("https://00gym.shop/api/cars")
-//                        sseClient.startListening()
-//                    }
                     // 현재 비콘과의 연결을 끊고 다른 비콘과 연결 시도
                     lifecycleScope.launch {
                         disconnectFromBeacon(deviceId)
@@ -183,7 +155,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
             }
         }.launchIn(lifecycleScope)
 
-        //uwbManager.startDeviceScanning(this) // 비콘 스캐닝 시작
         lifecycleScope.launch {
             delay(5000) // 5초 동안만 스캔
             uwbManager.stopDeviceScanning()
@@ -210,28 +181,17 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
             }
         } else {
             Log.i("UWB", "No more beacons to connect to.")
-//            for(i in beaconsDist.values){ // map 돌면서 map에 들어온 비콘들 거리값 받아옴
-//                values.add(i)
-//            }
-//            val keys = arrayListOf<String>()
-//            for(i in beaconsDist.keys){ // map 돌면서 map에 들어온 비콘들 거리값 받아옴
-//                keys.add(i)
-//            }
+
             for(i in beaconList){
-                //Log.i("BeaconList", "반복문")
                 if(i.dist != 987654321.0){
                     Log.i("BeaconList", "추가됨")
                     distValues.add(i)
                 }
             }
 
-            //val location = calcUserLocation(beaconsDist["04:42"]!!, beaconsDist["19:3A"]!!, beaconsDist["7C:84"]!!)
             val location = calcUserLocation(distValues[0].dist,distValues[1].dist,distValues[2].dist)
             val carUserDist = calCarUserDistance((distValues[0].x + distValues[1].x)/2, 0.0, location.first, location.second)
             Log.i("UWB", "x : ${location.first} , y : ${location.second} , car_user_distance : ${carUserDist}")
-            //binding.tvX.text = "X : " + String.format("%.4f", location.first)
-            //binding.tvY.text = "Y : " + String.format("%.4f", location.second)
-            //binding.tvDist.text = "Dist : " + String.format("%.4f", carUserDist)
             val newGPS = moveInCustomDirection(currentLatitude, currentLongitude, location.first, location.second, carInfo.heading)
             Log.i("NEW_GPS", "userX = ${newGPS.first}, userY = ${newGPS.second}")
             // 사각형 범위 내에 있는지 확인
@@ -300,7 +260,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         }
     }
 
-    private suspend fun disconnectFromBeacon(deviceId: String) {
+    private fun disconnectFromBeacon(deviceId: String) {
         try {
             uwbManager.disconnectDevice()
             Log.i("UWB", "Disconnected from beacon: $deviceId")
@@ -318,21 +278,19 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     }
 
     private fun resetAndRestartUWBScan() {
-        // Clear beacons list and distance data
+        // 비콘리스트와 거리 데이터 Clear
         beacons.clear()
         beaconsDist.clear()
         connectedDevices.clear()
 
-        // Log the reset event
         Log.i("UWB", "Beacon data cleared. Restarting UWB scan...")
 
-        // Restart the scanning process
         uwbManager.disconnectDevice()
         uwbManager.stopDeviceScanning()
 
         lifecycleScope.launch {
-            delay(1000) // Optional delay to ensure proper reset
-            startUWBScan() // Restart the UWB scan
+            delay(1000)
+            startUWBScan() // UWB 탐색 시작
         }
     }
 
@@ -343,7 +301,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     override fun onDestroy() {
         super.onDestroy()
         showCustomToast("onDestroy")
-        // Stop GpsService
+        // GpsService 멈추기
         val gpsServiceIntent = Intent(this, GpsService::class.java)
         stopService(gpsServiceIntent)
         editor.clear()
@@ -381,7 +339,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     }
 
     override fun onDialogClick(id: Int) {
-        //finish()
+
     }
 
     // 사용자 정의 방향을 기준으로 이동할 좌표 계산
@@ -409,7 +367,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
 
     override fun onGetCarFailure(message: String) {
         showCustomToast(message)
-        Log.i("Embedded_Car_ERROR",message.toString())
+        Log.i("Embedded_Car_ERROR",message)
     }
 
     override fun onDeleteUserSuccess(response: ResponseBody) {
@@ -419,7 +377,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
 
     override fun onDeleteUserFailure(message: String) {
         showCustomToast(message)
-        Log.i("Embedded_Car_ERROR",message.toString())
+        Log.i("Embedded_Car_ERROR",message)
     }
 
     override fun onPostUserSuccess(response: ResponseBody) {
@@ -429,6 +387,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
 
     override fun onPostUserFailure(message: String) {
         showCustomToast(message)
-        Log.i("Embedded_Car_ERROR",message.toString())
+        Log.i("Embedded_Car_ERROR",message)
     }
 }

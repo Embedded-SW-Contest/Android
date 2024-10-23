@@ -2,10 +2,7 @@ package com.uwb.safeguard.config
 
 import android.app.Application
 import android.content.SharedPreferences
-import com.estimote.uwb.api.EstimoteUWBFactory
 import com.uwb.safeguard.src.model.CarInfo
-import okhttp3.Interceptor
-import com.uwb.safeguard.src.model.CarResponse
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -25,7 +22,7 @@ class ApplicationClass : Application() {
         val USER_DIST = "USER_DIST"
         val CAR_LAT = "CAR_LAT"
         val CAR_LON = "CAR_LON"
-        //val uwbManager = EstimoteUWBFactory.create()
+
         lateinit var carInfo : CarInfo
 
         lateinit var sRetrofit: Retrofit

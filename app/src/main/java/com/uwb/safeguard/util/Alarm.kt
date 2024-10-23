@@ -8,7 +8,6 @@ import android.os.VibratorManager
 import android.util.Log
 
 class Alarm (private val con : Context){
-    val dist = 0
     private val notification: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
     private val ringtone = RingtoneManager.getRingtone(con, notification)
 
@@ -18,7 +17,7 @@ class Alarm (private val con : Context){
     fun ringAlarm()   {
         Log.i("Alarm","Alarm ringing")
 
-        //ringtone.play()
+        ringtone.play()
         vibrator.vibrate(
             VibrationEffect.createWaveform(
                 longArrayOf(300, 1000, 300, 2000),
@@ -29,7 +28,7 @@ class Alarm (private val con : Context){
     }
 
     fun stopAlarm(){
-        //ringtone.stop()
+        ringtone.stop()
         vibrator.cancel()
     }
 }
