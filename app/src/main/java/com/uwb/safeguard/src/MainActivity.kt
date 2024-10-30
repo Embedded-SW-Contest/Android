@@ -236,7 +236,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                             // 알림창이 띄워져있는 동안 배경 클릭 막기
                             dialog.isCancelable = false
                             dialog.show(this.supportFragmentManager, "ConfirmDialog")
-                            //alarm.ringAlarm()
+                            alarm.ringAlarm()
                             connectedDevices.clear()
                             connectToNextBeacon()
                         }
